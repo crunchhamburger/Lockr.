@@ -93,7 +93,7 @@ button.pill:active { transform: scale(0.97); }
 .btn.sm { min-height: 44px; padding: 0 14px; font-size: 15px; }
 .btn.quiet { border-color: transparent; background: none; color: var(--muted); }
 .btn.quiet:hover { background: var(--sunk); color: var(--ink); }
-.back { color: var(--accent); font-weight: 500; min-height: 44px; display: inline-flex; align-items: center; width: auto !important; margin-inline: auto; align-self: stretch; justify-content: flex-start; }
+.back { color: var(--accent); font-weight: 500; min-height: 44px; display: flex; align-items: center; justify-content: flex-start; }
 .big { font: 500 56px/1 var(--font); letter-spacing: -0.04em; color: var(--accent); font-variant-numeric: tabular-nums; }
 
 /* Meters */

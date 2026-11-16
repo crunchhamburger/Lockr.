@@ -136,7 +136,7 @@ function viewBldg() {
   return `<button class="back" data-act="back">‹ Back</button>
     <div><h1 class="h1">${esc(BLDG[V.bldg][3])}</h1><p class="sub">${plural(all.length, 'rated spot')} inside.</p></div>
     ${modelSlot(V.bldg)}
-    ${credit ? `<p class="small">3D model made with Hunyuan3D from a photograph by ${esc(credit.artist)} (${esc(credit.license)}). It shows the outside only, and the sides the photo did not see are the model's guess.</p>` : ''}
+    ${credit ? `<p class="small">3D model made with Hunyuan3D from <a class="textlink" href="${esc(credit.page)}" target="_blank" rel="noopener">a photograph by ${esc(credit.artist)}</a> (${esc(credit.license)}). It shows the outside only, and the sides the photo did not see are the model's guess.</p>` : ''}
     ${floors}
     <h2 class="h2">Spots here</h2>
     <div class="list">${all.map(spotRow).join('')}</div>`;

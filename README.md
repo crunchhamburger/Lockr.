@@ -68,10 +68,14 @@ How it works:
 The 3D building models in `app/public/models/` are made with Tencent's Hunyuan3D from one photograph each:
 
 ```bash
-HF_TOKEN=hf_xxx node tools/hunyuan3d.mjs photo.jpg app/public/models/reg.glb
+HF_TOKEN=hf_xxx node tools/hunyuan3d.mjs photo.jpg raw.glb --v21
 ```
 
-Then list the file and the photo's credit in `app/public/models/models.json`. The public demo it calls has a small free daily GPU allowance per Hugging Face account.
+```bash
+node tools/shrink-model.mjs raw.glb app/public/models/reg.glb
+```
+
+Then list the file and the photo's credit in `app/public/models/models.json`; a building with no entry shows no model. `--v21` uses the Hunyuan3D-2.1 demo, the one that textures. A free Hugging Face account's daily GPU allowance covers one textured model a day, so only Mansueto has one so far.
 
 ```bash
 node --test tests/app.test.js

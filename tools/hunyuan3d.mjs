@@ -2,7 +2,7 @@
 // Turn one photograph of a building into a textured 3D model with Tencent's Hunyuan3D-2,
 // through its public demo on Hugging Face (no GPU needed here).
 //
-//   node tools/hunyuan3d.mjs <photo.jpg> <out.glb> [--shape-only] [--seed 1234] [--steps 30]
+//   node tools/hunyuan3d.mjs <photo.jpg> <out.glb> [--v21] [--shape-only] [--seed 1234] [--steps 30]
 //
 // The free demo gives each visitor a small daily GPU allowance. Set HF_TOKEN to a Hugging Face
 // token to use your own account's allowance instead of the anonymous one.
@@ -13,7 +13,7 @@ const args = process.argv.slice(2), flag = n => args.includes('--' + n), opt = (
 const [photo, out] = args.filter((a, i) => !a.startsWith('--') && !(args[i - 1] || '').match(/^--(seed|steps|space)$/));
 if (!photo || !out) { console.error('usage: node tools/hunyuan3d.mjs <photo.jpg> <out.glb> [--shape-only] [--seed n] [--steps n]'); process.exit(2); }
 
-const BASE = opt('space', 'https://tencent-hunyuan3d-2.hf.space');
+const BASE = opt('space', flag('v21') ? 'https://tencent-hunyuan3d-2-1.hf.space' : 'https://tencent-hunyuan3d-2.hf.space');
 const endpoint = flag('shape-only') ? 'shape_generation' : 'generation_all';
 const auth = process.env.HF_TOKEN ? { Authorization: `Bearer ${process.env.HF_TOKEN}` } : {};
 
@@ -26,7 +26,8 @@ async function upload(file) {
 }
 
 // The demo's queue: join it, then read its event stream until the run completes.
-const FN = { shape_generation: 5, generation_all: 8 };
+// The two demos number their functions differently. 2.1 (--v21) makes textured models; its first input is unused.
+const FN = BASE.includes('2-1') ? { shape_generation: 2, generation_all: 5 } : { shape_generation: 5, generation_all: 8 };
 async function call(name, data) {
   const session_hash = Math.random().toString(36).slice(2);
   const res = await fetch(`${BASE}/queue/join`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...auth }, body: JSON.stringify({ data, fn_index: FN[name], session_hash }) });

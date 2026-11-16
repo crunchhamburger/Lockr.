@@ -1,1 +1,10 @@
-{}
+{
+  "man": {
+    "file": "man.glb",
+    "credit": {
+      "artist": "Warren LeMay",
+      "license": "CC BY-SA 2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Mansueto_Library,_University_of_Chicago,_57th_Street_and_Ellis_Avenue,_Hyde_Park,_Chicago,_IL_(54515478570).jpg"
+    }
+  }
+}
