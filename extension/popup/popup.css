@@ -1,0 +1,25 @@
+body { width: 300px; margin: 0; padding: 14px 16px; font: 13px/1.45 system-ui, sans-serif; color: #1c1c1e; background: #fff; }
+h1 { font-size: 16px; margin: 0 0 10px; }
+h2 { font-size: 13px; margin: 0 0 2px; }
+section { padding: 12px 0; border-top: 1px solid #e5e5ea; }
+p { margin: 0 0 8px; }
+.status { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.detail { color: #6b6b70; font-size: 12px; }
+.error { color: #b3261e; font-size: 12px; min-height: 1em; margin: 6px 0 0; }
+button { font: inherit; padding: 6px 10px; border: 1px solid #c7c7cc; border-radius: 6px; background: #f2f2f7; cursor: pointer; }
+button:hover { background: #e5e5ea; }
+ul { list-style: none; margin: 0 0 8px; padding: 0; }
+li { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+li .who { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+li .wait { color: #6b6b70; font-size: 12px; }
+li button { padding: 2px 8px; }
+form { display: flex; gap: 6px; }
+input { flex: 1; min-width: 0; font: inherit; padding: 6px 8px; border: 1px solid #c7c7cc; border-radius: 6px; }
+@media (prefers-color-scheme: dark) {
+  body { background: #1c1c1e; color: #f2f2f7; }
+  section { border-color: #3a3a3c; }
+  .detail, li .wait { color: #a1a1a6; }
+  button, input { background: #2c2c2e; border-color: #48484a; color: inherit; }
+  button:hover { background: #3a3a3c; }
+  .error { color: #ff8a80; }
+}

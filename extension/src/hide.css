@@ -1,0 +1,8 @@
+/* Page stays invisible until Lockr has approved the URL. */
+html.lockr-checking body { visibility: hidden !important; }
+
+/* Remove the doors to the feed, Explore and Reels. Matched by link target,
+   which is far more stable than Instagram's generated class names. */
+html.lockr-on a[href="/"],
+html.lockr-on a[href="/explore/"],
+html.lockr-on a[href="/reels/"] { display: none !important; }

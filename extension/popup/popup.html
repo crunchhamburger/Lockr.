@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Lockr</h1>
+
+  <section>
+    <p id="status" class="status"></p>
+    <p id="detail" class="detail"></p>
+    <button id="unlock"></button>
+  </section>
+
+  <section>
+    <h2>Allowed profiles</h2>
+    <p class="detail">Accounts you can still visit. A new one becomes available after the waiting period.</p>
+    <ul id="profiles"></ul>
+    <form id="add">
+      <input id="name" placeholder="username" autocomplete="off" spellcheck="false">
+      <button type="submit">Add</button>
+    </form>
+    <p id="error" class="error"></p>
+  </section>
+
+  <p id="demo" class="detail"></p>
+
+  <script src="../src/lock.js"></script>
+  <script src="../src/policy.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

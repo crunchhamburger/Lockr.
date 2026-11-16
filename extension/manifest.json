@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Lockr",
+  "version": "0.1.0",
+  "description": "Instagram, messages only. Blocks the feed, Reels, Explore and Stories; keeps DMs.",
+  "permissions": ["storage"],
+  "action": { "default_popup": "popup/popup.html", "default_title": "Lockr" },
+  "content_scripts": [
+    {
+      "matches": ["*://www.instagram.com/*", "*://instagram.com/*"],
+      "js": ["src/lock.js", "src/policy.js", "src/content.js"],
+      "css": ["src/hide.css"],
+      "run_at": "document_start"
+    }
+  ]
+}
