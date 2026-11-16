@@ -1,0 +1,470 @@
+<title>Lockr Study Spots</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one phone-width column, fixed header and tab bar, the view scrolls between them. */
+:root {
+  --bg: #ECECEF; --surface: #FFFFFF; --sunk: #E2E2E7; --ink: #1B1A1F; --muted: #686670; --line: #D6D5DC;
+  --accent: #7A0019; --accent-ink: #FFFFFF; --accent-soft: #F3DCE1;
+  --hi: #F5D547; --hi-ink: #2A2400; --good: #1F7A4D; --warn: #A85800; --bad: #B3261E;
+  --display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --gl: max(16px, env(safe-area-inset-left, 0px)); --gr: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #131216; --surface: #1D1C22; --sunk: #28272F; --ink: #EDECF1; --muted: #9C9AA7; --line: #34333D;
+  --accent: #E8647C; --accent-ink: #1F0007; --accent-soft: #3A1820;
+  --hi: #F5D547; --hi-ink: #2A2400; --good: #5BC690; --warn: #F0A24A; --bad: #FF8A80; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #131216; --surface: #1D1C22; --sunk: #28272F; --ink: #EDECF1; --muted: #9C9AA7; --line: #34333D;
+  --accent: #E8647C; --accent-ink: #1F0007; --accent-soft: #3A1820;
+  --hi: #F5D547; --hi-ink: #2A2400; --good: #5BC690; --warn: #F0A24A; --bad: #FF8A80; color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.4 var(--body); }
+* { box-sizing: border-box; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; text-align: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3, p { margin: 0; }
+
+#app { height: 100%; max-width: 440px; margin: 0 auto; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+#top { display: flex; align-items: center; gap: 8px; padding-block: 10px; padding-left: var(--gl); padding-right: var(--gr); }
+.word { font: 800 24px/1 var(--display); letter-spacing: -0.02em; }
+.word i { font-style: normal; color: var(--accent); }
+.chip { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.chip.on { background: var(--ink); color: var(--bg); }
+.chip.live { background: var(--hi); color: var(--hi-ink); }
+.grow { flex: 1; min-width: 0; }
+
+#session { margin-left: var(--gl); margin-right: var(--gr); margin-bottom: 8px; padding: 10px 12px; border-radius: 12px; background: var(--hi); color: var(--hi-ink); display: flex; align-items: center; gap: 10px; font-weight: 600; }
+#session .t { font: 500 15px var(--mono); }
+#session button { padding: 5px 10px; border-radius: 8px; background: var(--hi-ink); color: var(--hi); font-size: 13px; font-weight: 600; }
+
+#view { flex: 1; min-height: 0; overflow-y: auto; padding-block: 4px 20px; padding-left: var(--gl); padding-right: var(--gr); display: flex; flex-direction: column; gap: 14px; }
+#view > * { flex: none; }
+#tabs { display: flex; border-top: 1px solid var(--line); background: var(--surface); padding-left: var(--gl); padding-right: var(--gr); }
+#tabs button { flex: 1; padding: 9px 0 8px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--muted); }
+#tabs button[aria-current="true"] { color: var(--accent); }
+#tabs svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.h1 { font: 800 28px/1.05 var(--display); letter-spacing: -0.02em; text-wrap: balance; }
+.h2 { font: 600 13px var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.sub { color: var(--muted); font-size: 13px; }
+.code { font: 500 11px var(--mono); color: var(--muted); letter-spacing: 0.02em; }
+.row { display: flex; align-items: center; gap: 10px; }
+.wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.card { background: var(--surface); border-radius: 14px; padding: 14px; }
+.list { background: var(--surface); border-radius: 14px; overflow: hidden; }
+.list > * + * { border-top: 1px solid var(--line); }
+.item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; width: 100%; }
+.item .n { font: 800 18px var(--display); width: 22px; color: var(--muted); text-align: center; flex: none; }
+.item .name { font-weight: 600; }
+.score { font: 800 17px var(--display); min-width: 46px; text-align: center; padding: 6px 0; border-radius: 10px; background: var(--accent-soft); color: var(--accent); flex: none; font-variant-numeric: tabular-nums; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: var(--good); }
+.dot.mid { background: var(--warn); } .dot.full { background: var(--bad); }
+.filters { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.filters button { flex: none; }
+.btn { display: inline-flex; justify-content: center; align-items: center; padding: 11px 14px; border-radius: 12px; font-weight: 600; background: var(--sunk); }
+.btn.pri { background: var(--accent); color: var(--accent-ink); }
+.btn.sm { padding: 6px 10px; border-radius: 9px; font-size: 13px; }
+.back { color: var(--accent); font-weight: 600; font-size: 14px; align-self: flex-start; }
+.big { font: 800 52px/1 var(--display); letter-spacing: -0.03em; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.meter { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; }
+.meter b { font-weight: 600; } .meter .v { font: 500 13px var(--mono); }
+.meter .bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.meter .bar i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.meter .hint { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.meter input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+.gem { display: flex; align-items: center; gap: 14px; }
+.gem .count { font: 800 40px/1 var(--display); font-variant-numeric: tabular-nums; }
+
+.post { padding: 12px 14px; display: flex; gap: 12px; }
+.post .votes { display: flex; flex-direction: column; align-items: center; gap: 2px; font: 500 13px var(--mono); flex: none; width: 30px; }
+.post .votes button { width: 28px; height: 24px; border-radius: 6px; color: var(--muted); text-align: center; font-size: 13px; }
+.post .votes button.on { background: var(--accent-soft); color: var(--accent); }
+.post .meta { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.post .tag { color: var(--accent); font-weight: 600; }
+textarea, input[type=text], select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+textarea { resize: none; min-height: 64px; }
+label.tog { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+label.tog input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+svg.map { width: 100%; height: auto; display: block; border-radius: 14px; background: var(--surface); }
+.map .st { stroke: var(--line); stroke-width: 7; stroke-linecap: round; }
+.map .green { fill: var(--good); opacity: 0.14; }
+.map .lbl { font: 500 8px var(--mono); fill: var(--muted); }
+.map .pin circle { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.map .pin.sel circle { fill: var(--hi); }
+.map .pin text { font: 700 10px var(--body); fill: var(--accent-ink); text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.map .pin.sel text { fill: var(--hi-ink); }
+.map .pin { cursor: pointer; }
+.map .pn { font: 600 8.5px var(--body); fill: var(--ink); text-anchor: middle; }
+.floor .out { fill: var(--surface); stroke: var(--line); stroke-width: 2; }
+.floor .z { fill: var(--sunk); }
+.floor .z.hot { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; cursor: pointer; }
+.floor text { font: 600 10px var(--body); fill: var(--ink); pointer-events: none; }
+.floor text.s { font: 500 9px var(--mono); fill: var(--accent); }
+.floors { display: flex; gap: 6px; }
+.floors button { width: 38px; height: 38px; border-radius: 10px; background: var(--sunk); font: 800 15px var(--display); text-align: center; }
+.floors button.on { background: var(--accent); color: var(--accent-ink); }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats div { background: var(--surface); border-radius: 14px; padding: 12px; }
+.stats b { display: block; font: 800 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: var(--muted); }
+.budget { height: 12px; border-radius: 6px; background: var(--sunk); display: flex; overflow: hidden; }
+.budget i { display: block; height: 100%; }
+
+#sheet { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; z-index: 5; }
+#sheet .panel { width: 100%; background: var(--surface); border-radius: 20px 20px 0 0; padding: 18px var(--gr) calc(20px + env(safe-area-inset-bottom, 0px)) var(--gl); display: flex; flex-direction: column; gap: 12px; }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.vs button { padding: 18px 12px; border-radius: 14px; background: var(--sunk); font-weight: 600; text-align: center; min-height: 96px; }
+.vs button:hover { background: var(--accent-soft); }
+.note { font-size: 12px; color: var(--muted); }
+</style>
+
+<div id="app">
+  <header id="top">
+    <span class="word">Lock<i>r</i></span>
+    <span class="chip">UChicago</span>
+    <span class="grow"></span>
+    <button class="chip" id="anonChip" data-act="anon"></button>
+  </header>
+  <div id="session" hidden><span class="grow" id="sessName"></span><span class="t" id="sessTime"></span><button data-act="end">End</button></div>
+  <main id="view"></main>
+  <nav id="tabs"></nav>
+  <div id="sheet" hidden></div>
+</div>
+
+<script>
+// ---------- Sample data. Spot names are real places; every number and post is made up for the demo. ----------
+// [id, name, where, code, kind, tags, score, here, busy, lockin, larp, yap, outlets, gems, building, note]
+const SPOTS = [
+  ['mansueto','Mansueto Grand Reading Room','Mansueto Library','MAN·1','silent',['Silent','Glass dome','Outlets'],9.4,41,82,9.6,8.8,0.4,8.9,6,'man','Under the dome. Drop a pen and forty people look up.'],
+  ['harper','Harper Reading Room','Harper Memorial Library, 3rd floor','HAR·3','silent',['Gothic','Silent','Photogenic'],9.1,28,64,8.4,10,1.2,5.1,9,'har','Cathedral ceilings. You will take a photo before you open your laptop.'],
+  ['reg5','Reg 5th Floor','Regenstein Library, 5th floor','REG·5','silent',['Silent','Empty','Stacks'],8.8,9,22,9.3,3.1,0.6,6.2,1,'reg','Where people go to disappear until the problem set is done.'],
+  ['crerar','Crerar Lower Level','Crerar Library','CRE·LL','quiet',['Quiet','STEM','Whiteboards'],8.5,17,45,8.9,2.4,1.8,7.8,2,'cre','Fluorescent, windowless, extremely effective.'],
+  ['law','D\'Angelo Law Library','Law School, south of the Midway','LAW·2','silent',['Views','Silent','Far'],8.3,12,30,8.7,7.9,0.8,8.1,4,'law','Worth the walk across the Midway. Check access during finals.'],
+  ['reg2','Reg 2nd Floor Reading Room','Regenstein Library, 2nd floor','REG·2','quiet',['Quiet','Big tables','Outlets'],8.0,33,71,8.1,4.6,2.6,7.4,3,'reg','The default. Nobody picks it, everybody ends up here.'],
+  ['eckhart','Eckhart Library','Eckhart Hall','ECK·2','quiet',['Tiny','Math','Chalkboards'],7.8,6,55,8.2,6.8,2.1,4.0,1,'eck','Small room, big proofs. Seats go fast before midterms.'],
+  ['saieh','Saieh Hall','Saieh Hall for Economics','SAI·1','quiet',['Bright','Econ','Nice chairs'],7.7,14,48,7.6,7.4,3.0,6.9,5,'sai','Looks like a consulting firm lobby, which is the point.'],
+  ['alevel','Reg A-Level','Regenstein Library, A-Level','REG·A','social',['Late night','Group work','Loud'],7.4,58,91,5.2,6.1,8.8,7.0,8,'reg','Open late. Half study hall, half social experiment.'],
+  ['logan','Logan Center Upper Floors','Logan Center for the Arts','LOG·9','quiet',['Views','Arts','Hidden'],7.3,5,18,7.4,8.2,1.9,5.5,3,'log','Skyline views and almost nobody knows about it.'],
+  ['booth','Booth Winter Garden','Harper Center','BTH·1','social',['Glass atrium','Bright','MBA energy'],7.0,22,60,6.3,9.1,6.2,6.0,7,'bth','Sit here in a quarter-zip and nobody will ask questions.'],
+  ['grounds','Grounds of Being','Swift Hall basement','SWI·B','cafe',['Coffee','Cheap','Cash vibes'],6.9,15,75,5.6,7.7,7.1,2.8,4,'swi','Divinity School coffee shop. Good for reading, bad for calls.'],
+  ['exlibris','Ex Libris Café','Regenstein Library, 1st floor','REG·1','cafe',['Coffee','Group work','Loud'],6.6,37,88,4.9,5.8,8.2,5.2,5,'reg','You came to study and stayed to talk for two hours.'],
+  ['hallowed','Hallowed Grounds','Reynolds Club, 2nd floor','REY·2','cafe',['Coffee','Couches','Pool tables'],6.5,19,66,4.4,7.2,7.6,4.1,6,'rey','Dark, cozy, and someone is always playing pool.'],
+  ['plein','Plein Air Café','Woodlawn Ave, by the bookstore','OFF·PA','cafe',['Off campus','Pastries','No outlets'],6.3,11,80,5.0,9.4,5.9,1.5,7,'pla','Peak laptop-and-latte. Bring a full battery.'],
+  ['cobb','Cobb Coffee Shop','Cobb Hall basement','COB·B','cafe',['Coffee','Between classes','Loud'],5.8,13,70,3.6,5.0,8.5,3.0,2,'cob','Ten minutes between classes, not ten pages of reading.'],
+  ['harpercafe','Harper Café','Harper Memorial Library, 3rd floor','HAR·3C','cafe',['Coffee','Late night'],6.1,8,40,5.4,6.6,6.0,4.4,3,'har','Fuel stop next to the reading room.'],
+  ['build','Build Coffee','Blackstone Ave, south of campus','OFF·BC','cafe',['Off campus','Quiet','Zines'],7.1,7,35,7.2,7.8,3.2,5.0,2,'bld','A real walk, which is why it is calm.'],
+].map(a => ({ id:a[0], name:a[1], where:a[2], code:a[3], kind:a[4], tags:a[5], score:a[6], here:a[7], busy:a[8],
+  m:{ lockin:a[9], larp:a[10], yap:a[11], outlets:a[12] }, gems:a[13], bldg:a[14], note:a[15] }));
+const spot = id => SPOTS.find(s => s.id === id);
+
+const METERS = [
+  ['lockin','Lock-in level','How much work actually gets done here.'],
+  ['larp','Larpability','How good it is for looking like you are studying.'],
+  ['yap','Yap level','How much talking is going on.'],
+  ['outlets','Outlet luck','Your odds of finding a working outlet.'],
+];
+
+// Campus pins, laid out roughly. North is up.
+const BLDG = {
+  man:['Mansueto',106,58], reg:['Regenstein',156,58], cre:['Crerar',58,128], rey:['Reynolds Club',204,96], eck:['Eckhart',186,128],
+  swi:['Swift Hall',150,158], cob:['Cobb Hall',108,190], har:['Harper',150,226], sai:['Saieh',238,116], pla:['Plein Air',280,124],
+  bth:['Booth',262,178], log:['Logan Center',52,326], law:['Law School',160,326], bld:['Build Coffee',318,386],
+};
+// Floor plans: [label, x, y, w, h, spotId]. Schematic only.
+const FLOORS = {
+  reg: { name:'Regenstein Library', order:['5','4','3','2','1','A','B'], start:'1', f:{
+    '5':[['Reading room',20,20,170,90,'reg5'],['Stacks',200,20,100,160],['Carrels',20,120,170,60]],
+    '4':[['Stacks',20,20,180,160],['Carrels',210,20,90,160]],
+    '3':[['Stacks',20,20,180,160],['Carrels',210,20,90,160]],
+    '2':[['Reading room',20,20,170,100,'reg2'],['Stacks',200,20,100,160],['Group rooms',20,130,170,50]],
+    '1':[['Ex Libris Café',20,20,110,80,'exlibris'],['Lobby and circulation',140,20,160,80],['Group tables',20,110,180,70],['To Mansueto',210,110,90,70]],
+    'A':[['All-night study',20,20,200,110,'alevel'],['Group tables',20,140,200,40],['Vending',230,20,70,160]],
+    'B':[['Stacks',20,20,280,160]] } },
+  har: { name:'Harper Memorial Library', order:['3'], start:'3', f:{
+    '3':[['Main reading room',20,20,280,80,'harper'],['North reading room',20,110,150,70],['Harper Café',180,110,120,70,'harpercafe']] } },
+};
+
+const COURSES = [
+  ['MATH 15300','Calculus III','eckhart'], ['MATH 16100','Honors Calculus I','eckhart'], ['ECON 20000','Elements of Economic Analysis I','saieh'],
+  ['CMSC 14100','Introduction to Computer Science I','crerar'], ['CHEM 11100','Comprehensive General Chemistry I','crerar'],
+  ['PHYS 13100','Mechanics','reg2'], ['SOSC 15100','Classics of Social and Political Thought I','harper'], ['HUMA 12300','Human Being and Citizen I','grounds'],
+];
+const SEED_RES = [
+  ['MATH 15300','Study guide','Every series convergence test on one page','anon gargoyle',47],
+  ['MATH 15300','Tip','Do the old homework again before the midterm, not the textbook examples','anon carrel',21],
+  ['MATH 16100','Notes','Epsilon-delta proofs, written out slowly','anon phoenix',38],
+  ['ECON 20000','Study guide','Consumer theory cheat sheet with worked Lagrangians','anon midway',64],
+  ['ECON 20000','Practice','12 practice problems I wrote for the first midterm','anon quad',29],
+  ['CMSC 14100','Notes','Recursion explained with drawings','anon gargoyle',52],
+  ['CMSC 14100','Tip','Start the project the day it comes out. Office hours are empty then.','anon dome',33],
+  ['CHEM 11100','Study guide','Thermo formulas and when each one applies','anon stacks',41],
+  ['PHYS 13100','Practice','Rotational motion problems, ranked by pain','anon phoenix',18],
+  ['SOSC 15100','Notes','Hobbes vs Locke vs Rousseau comparison table','anon carrel',73],
+  ['HUMA 12300','Tip','How to find a paper thesis in the Iliad in under an hour','anon midway',26],
+];
+const SEED_POSTS = [
+  ['anon gargoyle','alevel','A-Level at 1am is not a study space, it is a social experiment','14m',212],
+  ['anon dome','mansueto','whoever is eating a full rotisserie chicken in Mansueto. respect. but also no','32m',187],
+  ['anon phoenix','harper','Harper larpability 10/10. got zero work done, took 14 photos','1h',143],
+  ['anon midway','exlibris','ECON 20000 pset group forming at Ex Libris, table by the window, bring snacks','1h',38],
+  ['anon stacks','crerar','Crerar lower level is the only place my brain works. no windows no thoughts just chem','2h',96],
+  ['anon carrel','reg5','Reg 5 is so quiet I can hear my own GPA','3h',254],
+  ['anon quad','plein','Plein Air has zero outlets and I respect them for it','4h',61],
+  ['anon gargoyle',null,'where fun comes to die (affectionate)','5h',301],
+];
+const HANDLES = ['anon gargoyle','anon phoenix','anon carrel','anon dome','anon midway','anon stacks','anon quad'];
+
+// ---------- State (saved in this browser only) ----------
+const KEY = 'lockr-spots-v1';
+let S = { anon:true, name:'you', myRank:['mansueto','crerar','exlibris'], posts:[], voted:{}, gemmed:{}, rated:{}, res:[], resVoted:{}, session:null };
+try { Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+let V = { tab:'spots', filter:'all', spot:null, bldg:null, floor:null, course:null, pin:'reg', rating:false, rank:null, done:null };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const N_RATINGS = 24;
+
+// ---------- Derived values ----------
+const meter = (s, k) => S.rated[s.id] ? (s.m[k] * N_RATINGS + S.rated[s.id][k]) / (N_RATINGS + 1) : s.m[k];
+const hereNow = s => s.here + (S.session && S.session.spot === s.id ? 1 : 0);
+const gems = s => s.gems + (S.gemmed[s.id] ? 1 : 0);
+const busyWord = b => b < 40 ? ['', 'Plenty of seats'] : b < 75 ? ['mid', 'Filling up'] : ['full', 'Packed'];
+const ranked = () => [...SPOTS].sort((a, b) => b.score - a.score);
+const myScore = id => { const i = S.myRank.indexOf(id), n = S.myRank.length; return i < 0 ? null : n === 1 ? 10 : 10 - 5 * i / (n - 1); };
+const who = () => S.anon ? 'anon ' + ['gargoyle','phoenix','carrel'][S.name.length % 3] : S.name;
+const allPosts = () => [...S.posts, ...SEED_POSTS.map((p, i) => ({ id:'s' + i, by:p[0], spot:p[1], text:p[2], ago:p[3], votes:p[4] }))];
+const allRes = () => [...S.res, ...SEED_RES.map((r, i) => ({ id:'r' + i, course:r[0], kind:r[1], title:r[2], by:r[3], votes:r[4] }))];
+
+// ---------- Views ----------
+function spotRow(s, n) {
+  const [cls, word] = busyWord(s.busy);
+  return `<button class="item" data-act="spot" data-id="${s.id}">
+    <span class="n">${n}</span>
+    <span class="grow"><span class="name">${esc(s.name)}</span><br>
+      <span class="sub"><i class="dot ${cls}"></i>${hereNow(s)} here · ${word}</span></span>
+    <span class="score">${s.score.toFixed(1)}</span></button>`;
+}
+function viewSpots() {
+  const kinds = [['all','All'],['silent','Silent'],['quiet','Quiet'],['social','Social'],['cafe','Café']];
+  const list = ranked().filter(s => V.filter === 'all' || s.kind === V.filter);
+  const all = ranked();
+  return `<div><h1 class="h1">Where to lock in</h1><p class="sub">Ranked by students, head to head.</p></div>
+    <div class="filters">${kinds.map(k => `<button class="chip ${V.filter === k[0] ? 'on' : ''}" data-act="filter" data-id="${k[0]}">${k[1]}</button>`).join('')}</div>
+    <div class="list">${list.map(s => spotRow(s, all.indexOf(s) + 1)).join('')}</div>`;
+}
+function viewSpot() {
+  const s = spot(V.spot), rank = ranked().indexOf(s) + 1, mine = myScore(s.id), [cls, word] = busyWord(s.busy);
+  const inSess = S.session && S.session.spot === s.id;
+  const posts = allPosts().filter(p => p.spot === s.id);
+  const mrows = METERS.map(([k, label, hint]) => V.rating
+    ? `<div class="meter"><b>${label}</b><span class="v" id="out-${k}">${meter(s, k).toFixed(1)}</span>
+        <input type="range" id="rate-${k}" min="0" max="10" step="0.5" value="${Math.round(meter(s, k) * 2) / 2}" data-k="${k}" aria-label="${label}"></div>`
+    : `<div class="meter"><b>${label}</b><span class="v">${meter(s, k).toFixed(1)}</span>
+        <div class="bar"><i style="width:${meter(s, k) * 10}%"></i></div><span class="hint">${hint}</span></div>`).join('');
+  return `<button class="back" data-act="back">‹ Back</button>
+    <div><p class="code">${s.code}</p><h1 class="h1">${esc(s.name)}</h1><p class="sub">${esc(s.where)}</p></div>
+    <div class="row"><span class="big">${s.score.toFixed(1)}</span>
+      <span class="grow sub">#${rank} of ${SPOTS.length} on campus${mine ? `<br>Your score: <b>${mine.toFixed(1)}</b>` : ''}</span></div>
+    <p>${esc(s.note)}</p>
+    <div class="wrap">${s.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div>
+    <div class="row"><button class="btn pri grow" data-act="${inSess ? 'end' : 'lockin'}" data-id="${s.id}">${inSess ? 'End session' : 'Lock in here'}</button>
+      <button class="btn grow" data-act="rank" data-id="${s.id}">${mine ? 'Re-rank it' : 'Rank it'}</button></div>
+    <div class="card stack"><div class="row"><span class="h2 grow">Right now</span><span class="chip live">${hereNow(s)} here</span></div>
+      <div class="meter"><b><i class="dot ${cls}"></i>${word}</b><span class="v">${s.busy}% full</span><div class="bar"><i style="width:${s.busy}%"></i></div></div></div>
+    <div class="card stack"><div class="row"><span class="h2 grow">Vibe meters</span>
+      <button class="btn sm" data-act="${V.rating ? 'saverate' : 'rate'}">${V.rating ? 'Save my rating' : S.rated[s.id] ? 'Change my rating' : 'Rate the vibes'}</button></div>${mrows}</div>
+    <div class="card stack"><span class="h2">Baddie counter</span>
+      <div class="gem"><span class="count">${gems(s)}</span><span class="grow sub">rare gems spotted here today</span>
+        <button class="btn sm ${S.gemmed[s.id] ? '' : 'pri'}" data-act="gem" data-id="${s.id}">${S.gemmed[s.id] ? 'Counted' : 'Spotted one'}</button></div>
+      <p class="note">A count only. No names, photos or descriptions, ever.</p></div>
+    ${FLOORS[s.bldg] ? `<button class="btn" data-act="bldg" data-id="${s.bldg}">Find it on the floor map</button>` : ''}
+    <span class="h2">What people are saying</span>
+    ${posts.length ? `<div class="list">${posts.map(postRow).join('')}</div>` : `<p class="sub">Nothing yet. Post from the Feed tab and tag this spot.</p>`}`;
+}
+function viewMap() {
+  const sel = V.pin, here = id => SPOTS.filter(s => s.bldg === id).reduce((n, s) => n + hereNow(s), 0);
+  const streets = [[20,84,340,84,'57th St'],[20,240,340,240,'59th St'],[20,304,340,304,'60th St'],[20,364,340,364,'61st St']];
+  const aves = [[84,30,84,400,'Ellis'],[222,30,222,400,'University'],[296,30,296,400,'Woodlawn']];
+  const pins = Object.entries(BLDG).map(([id, [name, x, y]]) => `<g class="pin ${id === sel ? 'sel' : ''}" data-act="pin" data-id="${id}" tabindex="0" role="button" aria-label="${name}">
+    <circle cx="${x}" cy="${y}" r="13"></circle><text x="${x}" y="${y}">${here(id)}</text><text class="pn" x="${x}" y="${y + 24}">${name}</text></g>`).join('');
+  const inB = ranked().filter(s => s.bldg === sel), all = ranked();
+  return `<div><h1 class="h1">Campus map</h1><p class="sub">Numbers show how many people are locked in right now.</p></div>
+    <svg class="map" viewBox="0 0 360 420" role="img" aria-label="Schematic map of campus study buildings">
+      <rect class="green" x="20" y="250" width="320" height="44" rx="4"></rect><rect class="green" x="92" y="92" width="122" height="140" rx="4"></rect>
+      ${streets.map(l => `<line class="st" x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}"></line><text class="lbl" x="24" y="${l[1] - 6}">${l[4]}</text>`).join('')}
+      ${aves.map(l => `<line class="st" x1="${l[0]}" y1="${l[1]}" x2="${l[2]}" y2="${l[3]}"></line><text class="lbl" x="${l[0] + 6}" y="410">${l[4]}</text>`).join('')}
+      <text class="lbl" x="150" y="275" text-anchor="middle">MIDWAY PLAISANCE</text><text class="lbl" x="153" y="206" text-anchor="middle">MAIN QUAD</text>
+      ${pins}</svg>
+    <p class="note">Schematic, not to scale.</p>
+    <div class="row"><span class="h2 grow">${esc(BLDG[sel][0])}</span>${FLOORS[sel] ? `<button class="btn sm pri" data-act="bldg" data-id="${sel}">Floor map</button>` : ''}</div>
+    <div class="list">${inB.map(s => spotRow(s, all.indexOf(s) + 1)).join('')}</div>`;
+}
+function viewBldg() {
+  const b = FLOORS[V.bldg], fl = V.floor || b.start, zones = b.f[fl], rated = zones.filter(z => z[5]).map(z => spot(z[5])), all = ranked();
+  const svg = zones.map(z => { const s = z[5] && spot(z[5]);
+    return `<g ${s ? `data-act="spot" data-id="${s.id}" tabindex="0" role="button" aria-label="${esc(s.name)}"` : ''}>
+      <rect class="z ${s ? 'hot' : ''}" x="${z[1]}" y="${z[2]}" width="${z[3]}" height="${z[4]}" rx="6"></rect>
+      <text x="${z[1] + 8}" y="${z[2] + 18}">${esc(z[0])}</text>
+      ${s ? `<text class="s" x="${z[1] + 8}" y="${z[2] + 33}">${s.score.toFixed(1)} · ${hereNow(s)} here</text>` : ''}</g>`; }).join('');
+  return `<button class="back" data-act="back">‹ Back</button>
+    <div><h1 class="h1">${esc(b.name)}</h1><p class="sub">Tap a highlighted area to open that spot.</p></div>
+    <div class="row"><span class="h2">Floor</span><div class="floors">${b.order.map(f => `<button class="${f === fl ? 'on' : ''}" data-act="floor" data-id="${f}">${f}</button>`).join('')}</div></div>
+    <svg class="map floor" viewBox="0 0 320 200" role="img" aria-label="Floor ${fl} plan"><rect class="out" x="10" y="10" width="300" height="180" rx="10"></rect>${svg}</svg>
+    <p class="note">Sample layout, not a real floor plan.</p>
+    ${rated.length ? `<div class="list">${rated.map(s => spotRow(s, all.indexOf(s) + 1)).join('')}</div>`
+      : `<div class="card"><b>No rated spots on this floor yet.</b><p class="sub">Found a good carrel? Adding your own spots comes in the full app.</p></div>`}`;
+}
+function postRow(p) {
+  const v = S.voted[p.id] || 0, s = p.spot && spot(p.spot);
+  return `<div class="post"><div class="votes"><button class="${v > 0 ? 'on' : ''}" data-act="vote" data-id="${p.id}" data-d="1" aria-label="Upvote">▲</button>
+      <span>${p.votes + v}</span><button class="${v < 0 ? 'on' : ''}" data-act="vote" data-id="${p.id}" data-d="-1" aria-label="Downvote">▼</button></div>
+    <div class="grow"><p class="meta">${esc(p.by)} · ${esc(p.ago)}${s ? ` · <button class="tag" data-act="spot" data-id="${s.id}">${esc(s.name)}</button>` : ''}</p><p>${esc(p.text)}</p></div></div>`;
+}
+function viewFeed() {
+  return `<div><h1 class="h1">The feed</h1><p class="sub">What campus is saying about where it studies.</p></div>
+    <form class="card stack" id="postForm"><textarea id="postText" maxlength="240" placeholder="Say something about a spot" aria-label="Post text"></textarea>
+      <div class="row"><select id="postSpot" class="grow" aria-label="Tag a spot"><option value="">No spot</option>${ranked().map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+        <button class="btn pri" type="submit">Post</button></div>
+      <p class="note">Posting as <b>${esc(who())}</b>. ${S.anon ? 'Anonymous mode is on.' : 'Anonymous mode is off.'}</p></form>
+    <div class="list">${allPosts().map(postRow).join('')}</div>`;
+}
+function viewClasses() {
+  if (V.course) {
+    const c = COURSES.find(x => x[0] === V.course), s = spot(c[2]), items = allRes().filter(r => r.course === c[0]).sort((a, b) => b.votes - a.votes);
+    return `<button class="back" data-act="back">‹ Back</button>
+      <div><p class="code">${c[0]}</p><h1 class="h1">${esc(c[1])}</h1></div>
+      <button class="card row" data-act="spot" data-id="${s.id}"><span class="grow"><span class="h2">Where this class studies</span><br><b>${esc(s.name)}</b></span><span class="score">${s.score.toFixed(1)}</span></button>
+      <span class="h2">Shared by students</span>
+      <div class="list">${items.map(r => `<div class="post"><div class="votes"><button class="${S.resVoted[r.id] ? 'on' : ''}" data-act="rvote" data-id="${r.id}" aria-label="Upvote">▲</button><span>${r.votes + (S.resVoted[r.id] ? 1 : 0)}</span></div>
+        <div class="grow"><p class="meta">${esc(r.kind)} · ${esc(r.by)}</p><p>${esc(r.title)}</p></div></div>`).join('') || '<p class="item sub">Nothing shared yet.</p>'}</div>
+      <form class="card stack" id="resForm"><span class="h2">Share something</span>
+        <input type="text" id="resTitle" maxlength="120" placeholder="What is it? e.g. Midterm 1 review sheet" aria-label="Resource title">
+        <div class="row"><select id="resKind" class="grow" aria-label="Kind"><option>Study guide</option><option>Notes</option><option>Practice</option><option>Tip</option></select><button class="btn pri" type="submit">Share</button></div>
+        <p class="note">Share things you made. No exams, graded work or answer keys.</p></form>`;
+  }
+  return `<div><h1 class="h1">Classes</h1><p class="sub">Study guides, notes and tips, sorted by course.</p></div>
+    <div class="list">${COURSES.map(c => `<button class="item" data-act="course" data-id="${c[0]}"><span class="grow"><span class="code">${c[0]}</span><br><span class="name">${esc(c[1])}</span></span>
+      <span class="sub">${allRes().filter(r => r.course === c[0]).length} shared</span></button>`).join('')}</div>`;
+}
+function viewMe() {
+  const crew = [['You', 31, 'var(--accent)'], ['Maya', 12, 'var(--warn)'], ['Dev', 5, 'var(--good)']], used = crew.reduce((n, c) => n + c[1], 0);
+  const board = [['anon carrel', 31.5], ['Maya', 26], [S.anon ? who() + ' (you)' : 'You', 14.5], ['Dev', 11]];
+  return `<div><h1 class="h1">${esc(S.anon ? who() : S.name)}</h1><p class="sub">${S.anon ? 'Anonymous mode is on. Your name is hidden on posts, check-ins and leaderboards.' : 'Friends can see your name on posts and check-ins.'}</p></div>
+    <label class="tog card"><input type="checkbox" id="anonBox" ${S.anon ? 'checked' : ''}><span class="grow">Anonymous mode</span></label>
+    <div class="stats"><div><b>6</b><span>day streak</span></div><div><b>14.5</b><span>hours this week</span></div><div><b>${S.myRank.length}</b><span>spots ranked</span></div></div>
+    <span class="h2">Your ranking</span>
+    <div class="list">${S.myRank.map((id, i) => { const s = spot(id); return `<button class="item" data-act="spot" data-id="${id}"><span class="n">${i + 1}</span><span class="grow name">${esc(s.name)}</span><span class="score">${myScore(id).toFixed(1)}</span></button>`; }).join('')}</div>
+    <span class="h2">Most locked in this week</span>
+    <div class="list">${board.map((b, i) => `<div class="item"><span class="n">${i + 1}</span><span class="grow name">${esc(b[0])}</span><span class="code">${b[1]} h</span></div>`).join('')}</div>
+    <div class="card stack"><div class="row"><span class="h2 grow">Crew scroll budget</span><span class="chip">Coming next</span></div>
+      <p><b>${90 - used} of 90 minutes</b> left today, shared by the three of you.</p>
+      <div class="budget">${crew.map(c => `<i style="width:${c[1] / 90 * 100}%;background:${c[2]}"></i>`).join('')}</div>
+      <p class="sub">${crew.map(c => `${c[0]} ${c[1]} min`).join(' · ')}</p></div>
+    <p class="note">Demo data. Places are real, numbers and posts are invented. Your changes are saved on this device only.</p>`;
+}
+
+// ---------- Ranking: head-to-head comparisons place a spot in your list ----------
+function sheet() {
+  const el = $('sheet');
+  if (V.done) {
+    const s = spot(V.done), i = S.myRank.indexOf(s.id);
+    el.innerHTML = `<div class="panel"><span class="h2">Ranked</span><h2 class="h1">#${i + 1} of ${S.myRank.length} on your list</h2>
+      <p>${esc(s.name)} gets a <b>${myScore(s.id).toFixed(1)}</b> from you.</p><button class="btn pri" data-act="closesheet">Done</button></div>`;
+  } else if (V.rank) {
+    const a = spot(V.rank.id), b = spot(V.rank.list[(V.rank.lo + V.rank.hi) >> 1]);
+    el.innerHTML = `<div class="panel"><span class="h2">Head to head</span><h2 class="h1">Which is better to lock in at?</h2>
+      <div class="vs"><button data-act="pick" data-d="new">${esc(a.name)}</button><button data-act="pick" data-d="old">${esc(b.name)}</button></div>
+      <button class="btn" data-act="closesheet">Cancel</button></div>`;
+  }
+  el.hidden = !(V.rank || V.done);
+}
+function startRank(id) {
+  const list = S.myRank.filter(x => x !== id);
+  V.done = null;
+  if (!list.length) { S.myRank = [id]; V.rank = null; V.done = id; save(); }
+  else V.rank = { id, list, lo: 0, hi: list.length };
+}
+function pick(d) {
+  const r = V.rank, mid = (r.lo + r.hi) >> 1;
+  if (d === 'new') r.hi = mid; else r.lo = mid + 1;
+  if (r.lo >= r.hi) { r.list.splice(r.lo, 0, r.id); S.myRank = r.list; V.done = r.id; V.rank = null; save(); }
+}
+
+// ---------- Render and events ----------
+const TABS = [['spots','Spots','M4 6h16M4 12h16M4 18h10'],['map','Map','M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'],
+  ['feed','Feed','M4 5h16v11H9l-5 4z'],['classes','Classes','M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11'],['me','Me','M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0']];
+function render(keepScroll) {
+  const view = $('view'), y = view.scrollTop;
+  view.innerHTML = V.spot ? viewSpot() : V.bldg ? viewBldg() : { spots:viewSpots, map:viewMap, feed:viewFeed, classes:viewClasses, me:viewMe }[V.tab]();
+  view.scrollTop = keepScroll ? y : 0;
+  $('tabs').innerHTML = TABS.map(t => `<button data-act="tab" data-id="${t[0]}" aria-current="${V.tab === t[0]}"><svg viewBox="0 0 24 24"><path d="${t[2]}"></path></svg>${t[1]}</button>`).join('');
+  $('anonChip').textContent = S.anon ? 'Anonymous on' : 'Anonymous off';
+  $('anonChip').className = 'chip' + (S.anon ? ' on' : '');
+  $('session').hidden = !S.session;
+  if (S.session) $('sessName').textContent = 'Locked in · ' + spot(S.session.spot).name;
+  tick(); sheet();
+}
+function tick() {
+  if (!S.session) return;
+  const s = Math.floor((Date.now() - S.session.start) / 1000), p = n => String(n).padStart(2, '0');
+  $('sessTime').textContent = `${p(Math.floor(s / 3600))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
+}
+setInterval(tick, 1000);
+
+const ACT = {
+  tab: id => { V.tab = id; V.spot = V.bldg = V.course = null; V.rating = false; },
+  filter: id => { V.filter = id; },
+  spot: id => { V.spot = id; V.rating = false; },
+  back: () => { if (V.spot) { V.spot = null; V.rating = false; } else if (V.bldg) V.bldg = null; else V.course = null; },
+  pin: id => { V.pin = id; return true; },
+  bldg: id => { V.bldg = id; V.floor = null; V.spot = null; },
+  floor: id => { V.floor = id; return true; },
+  course: id => { V.course = id; },
+  anon: () => { S.anon = !S.anon; return true; },
+  lockin: id => { S.session = { spot: id, start: Date.now() }; S.posts.unshift({ id: 'u' + Date.now(), by: who(), spot: id, text: 'just locked in', ago: 'now', votes: 1 }); return true; },
+  end: () => { S.session = null; return true; },
+  rank: id => { startRank(id); return true; },
+  pick: (id, d) => { pick(d); return true; },
+  closesheet: () => { V.rank = V.done = null; return true; },
+  rate: () => { V.rating = true; return true; },
+  saverate: () => { const r = {}; METERS.forEach(m => { r[m[0]] = +$('rate-' + m[0]).value; }); S.rated[V.spot] = r; V.rating = false; return true; },
+  gem: id => { S.gemmed[id] = !S.gemmed[id]; return true; },
+  vote: (id, d) => { S.voted[id] = S.voted[id] === +d ? 0 : +d; return true; },
+  rvote: id => { S.resVoted[id] = !S.resVoted[id]; return true; },
+};
+$('app').addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const keep = ACT[el.dataset.act](el.dataset.id, el.dataset.d);
+  save(); render(keep);
+});
+$('app').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('g[data-act]')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
+});
+$('app').addEventListener('input', e => { if (e.target.dataset.k) $('out-' + e.target.dataset.k).textContent = (+e.target.value).toFixed(1); });
+$('app').addEventListener('change', e => { if (e.target.id === 'anonBox') { S.anon = e.target.checked; save(); render(true); } });
+$('app').addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'postForm') {
+    const text = $('postText').value.trim();
+    if (!text) return $('postText').focus();
+    S.posts.unshift({ id: 'u' + Date.now(), by: who(), spot: $('postSpot').value || null, text, ago: 'now', votes: 1 });
+  } else if (e.target.id === 'resForm') {
+    const title = $('resTitle').value.trim();
+    if (!title) return $('resTitle').focus();
+    S.res.unshift({ id: 'ur' + Date.now(), course: V.course, kind: $('resKind').value, title, by: who(), votes: 1 });
+  }
+  save(); render(true);
+});
+render();
+</script>
