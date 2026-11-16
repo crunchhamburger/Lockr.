@@ -8,6 +8,8 @@
   --font: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r: 12px; --gap: 16px;
+  /* Motion: one decelerating curve for things arriving, one with a little overshoot for things you pressed. */
+  --out: cubic-bezier(0.22, 1, 0.36, 1); --spring: cubic-bezier(0.34, 1.56, 0.64, 1); --t-fast: 0.14s; --t: 0.26s; --t-slow: 0.5s;
   --gl: max(16px, env(safe-area-inset-left, 0px)); --gr: max(16px, env(safe-area-inset-right, 0px));
 }
 @media (prefers-color-scheme: dark) {
@@ -38,7 +40,13 @@ button { cursor: pointer; border: 0; background: none; padding: 0; text-align: i
 
 #tabs { display: flex; border-top: 1px solid var(--line); background: var(--surface); padding: 0 var(--gr) env(safe-area-inset-bottom, 0px) var(--gl); }
 #tabs button { flex: 1; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 500; color: var(--muted); position: relative; }
+#tabs { position: relative; }
+#tabs button { transition: color var(--t-fast); z-index: 1; }
 #tabs button[aria-current="true"] { color: var(--accent); }
+#tabs button svg { transition: transform var(--t) var(--spring); }
+#tabs button[aria-current="true"] svg { transform: translateY(-1px) scale(1.08); }
+#tabs button:active svg { transform: scale(0.9); }
+#tabs .ind { position: absolute; top: -1px; left: var(--gl); height: 2px; width: calc((100% - var(--gl) - var(--gr)) / 5); background: var(--accent); border-radius: 2px; transform: translateX(calc(var(--i, 0) * 100%)); transition: transform 0.38s var(--out); }
 #tabs svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 #tabs .badge { position: absolute; top: 6px; left: calc(50% + 6px); }
 
@@ -81,9 +89,10 @@ button.pill:active { transform: scale(0.97); }
 .badge { font: 600 12px/18px var(--font); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); text-align: center; }
 .filters { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
 .filters button { flex: none; min-height: 44px; }
-.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--sunk); border-radius: 10px; padding: 3px; }
-.seg button { min-height: 40px; border-radius: 8px; text-align: center; font-weight: 500; color: var(--muted); }
-.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--sunk); border-radius: 10px; padding: 3px; position: relative; }
+.seg::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n, 2)); border-radius: 8px; background: var(--surface); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); transform: translateX(calc(var(--i, 0) * 100%)); transition: transform 0.32s var(--out); }
+.seg button { min-height: 40px; border-radius: 8px; text-align: center; font-weight: 500; color: var(--muted); position: relative; transition: color var(--t-fast); }
+.seg button[aria-pressed="true"] { color: var(--ink); }
 
 .btn { display: inline-flex; justify-content: center; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 10px; font-weight: 500; background: var(--surface); border: 1px solid var(--line); transition: transform 0.1s, background-color 0.15s, filter 0.15s; }
 .btn:hover { background: var(--sunk); }
@@ -185,8 +194,8 @@ svg.map { width: 100%; height: auto; display: block; border-radius: var(--r); ba
   #app { flex-direction: row; }
   #tabs { flex-direction: column; justify-content: flex-start; gap: 4px; width: 220px; padding: 68px 12px 12px; border-top: 0; border-right: 1px solid var(--line); }
   #tabs button { flex: none; flex-direction: row; justify-content: flex-start; gap: 12px; padding: 0 14px; min-height: 48px; border-radius: 10px; font-size: 16px; transition: background-color 0.15s; }
-  #tabs button:hover { background: var(--sunk); }
-  #tabs button[aria-current="true"] { background: var(--accent-soft); }
+  #tabs .ind { top: 68px; left: 12px; width: calc(100% - 24px); height: 48px; border-radius: 10px; background: var(--accent-soft); transform: translateY(calc(var(--i, 0) * 52px)); }
+  #tabs button:hover:not([aria-current="true"]) { background: color-mix(in srgb, var(--sunk) 70%, transparent); }
   #tabs .badge { position: static; margin-left: auto; }
   #top { padding: 18px 32px 8px; }
   #view { padding: 8px 32px 48px; gap: 20px; }
@@ -198,4 +207,63 @@ svg.map { width: 100%; height: auto; display: block; border-radius: var(--r); ba
   #sheet .panel { border-radius: 20px; padding: 28px; }
   #toast { bottom: 32px; }
 }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ---------- Motion ----------
+   A screen you navigate to rises into place, its blocks one after another. A data refresh never
+   replays that: only the number that changed bumps, and only a post that is new slides in. */
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes drop { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes grow { from { transform: scaleX(0); } }
+@keyframes pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes bump { 0% { transform: translateY(0.5em); opacity: 0; } 55% { transform: translateY(-0.12em); opacity: 1; } 100% { transform: none; } }
+@keyframes arrive { from { opacity: 0; transform: translateY(-10px); background: var(--accent-soft); } 30% { opacity: 1; transform: none; background: var(--accent-soft); } to { background: transparent; } }
+@keyframes ping { from { transform: scale(1); opacity: 0.45; } 70%, to { transform: scale(2.3); opacity: 0; } }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+#view.nav > * { animation: rise var(--t-slow) var(--out) both; }
+#view.nav[data-dir="back"] > * { animation-name: drop; animation-duration: 0.34s; }
+#view.nav > :nth-child(2) { animation-delay: 45ms; } #view.nav > :nth-child(3) { animation-delay: 90ms; }
+#view.nav > :nth-child(4) { animation-delay: 135ms; } #view.nav > :nth-child(5) { animation-delay: 180ms; }
+#view.nav > :nth-child(6) { animation-delay: 225ms; } #view.nav > :nth-child(n + 7) { animation-delay: 270ms; }
+#view.nav .auth > * { animation: rise 0.6s var(--out) both; } #view.nav .auth > :nth-child(2) { animation-delay: 120ms; }
+#view.nav > .auth { animation: none; }
+#view.nav .meter .bar i { transform-origin: left; animation: grow 0.8s var(--out) both; animation-delay: calc(260ms + var(--d, 0ms)); }
+#view.nav .map .pin .d, #view.nav .map .pin text { animation: pop 0.45s var(--spring) both; animation-delay: calc(120ms + var(--d, 0ms)); transform-box: fill-box; transform-origin: center; }
+#view.nav .map .st { stroke-dasharray: 400; animation: draw 0.9s var(--out) both; }
+@keyframes draw { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+
+.bump { display: inline-block; animation: bump 0.42s var(--out); }
+.post.new { animation: arrive 1.6s var(--out); }
+.pop { animation: pop 0.38s var(--spring); }
+.score, .gem .count, .big { transition: color var(--t); }
+.dot.live { position: relative; }
+.dot.live::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: inherit; animation: ping 2.4s var(--out) infinite; }
+.map .pin .ping { fill: var(--accent); transform-box: fill-box; transform-origin: center; animation: ping 2.4s var(--out) infinite; pointer-events: none; }
+.map .pin .d { transition: transform var(--t) var(--spring), stroke-width var(--t-fast); }
+
+button.item { transition: background-color var(--t-fast), transform var(--t-fast); }
+button.item .score { transition: transform var(--t) var(--spring); }
+button.item:hover .score { transform: scale(1.06); }
+button.item:active { transform: scale(0.992); }
+.post .votes button { transition: background-color var(--t-fast), color var(--t-fast), transform var(--t-fast); }
+.post .votes button:active { transform: scale(0.85); }
+.textlink, .post .link { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat; transition: background-size var(--t) var(--out); }
+.textlink:hover, .post .link:hover { background-size: 100% 1.5px; text-decoration: none; }
+textarea, input[type=text], input[type=password], select { transition: border-color var(--t-fast), box-shadow var(--t-fast); }
+
+#session:not([hidden]) { animation: drop 0.4s var(--out); }
+#sheet:not([hidden]) { animation: fade 0.2s ease-out; }
+#sheet.opening .panel { animation: sheet-up 0.42s var(--out); }
+#sheet .vs button { animation: rise 0.34s var(--out) both; } #sheet .vs button + button { animation-delay: 60ms; }
+#sheet .panel .h1 { animation: rise 0.34s var(--out) both; }
+#toast:not([hidden]) { animation: rise 0.3s var(--out); }
+
+.model::before { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--surface) 70%, transparent) 50%, transparent 70%) 0 0 / 200% 100%; animation: shimmer 1.6s linear infinite; }
+.model:has(model-viewer.ready)::before { display: none; }
+.model model-viewer { opacity: 0; transform: scale(0.96); transition: opacity 0.6s var(--out), transform 0.9s var(--out); }
+.model model-viewer.ready { opacity: 1; transform: none; }
+.model .how { animation: fade 0.4s 0.8s both; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .model model-viewer { opacity: 1; transform: none; } }

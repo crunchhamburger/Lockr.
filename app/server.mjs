@@ -296,6 +296,8 @@ export function createApp({ dbPath = ':memory:', now = () => Date.now() } = {}) 
       }
       if (url.pathname.startsWith('/api/')) return send(res, 404, { error: 'Not found.' });
       if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Not allowed.' });
+      // The front door: people who are signed in, or arriving on an invite link, go straight to the app.
+      if (url.pathname === '/' && (userOf(req) || url.searchParams.has('add'))) { res.writeHead(302, { Location: '/app.html' + url.search, 'Cache-Control': 'no-store' }); return res.end(); }
       serveFile(req, res, url.pathname);
     } catch (e) {
       if (!(e instanceof Fail)) console.error(e);

@@ -45,15 +45,18 @@ function ago(ms) {
   const s = Math.max(0, (S.now - ms) / 1000);
   return s < 60 ? 'just now' : s < 3600 ? `${Math.floor(s / 60)} min ago` : s < 86400 ? `${Math.floor(s / 3600)} h ago` : plural(Math.floor(s / 86400), 'day') + ' ago';
 }
-const hereLine = x => x.here ? `<i class="dot"></i>${x.here} locked in${x.friendsHere.length ? ` · ${esc(x.friendsHere.join(', '))}` : ''}` : `<i class="dot off"></i>Nobody locked in`;
-const scoreBox = x => x.score == null ? `<span class="score none">New</span>` : `<span class="score">${fmt(x.score)}</span>`;
+const hereLine = x => x.here ? `<i class="dot live"></i>${x.here} locked in${x.friendsHere.length ? ` · ${esc(x.friendsHere.join(', '))}` : ''}` : `<i class="dot off"></i>Nobody locked in`;
+const scoreBox = (x, key) => x.score == null ? `<span class="score none">New</span>` : `<span class="score" ${key ? `data-n="s-${key}"` : ''}>${fmt(x.score)}</span>`;
+// A two-or-more way switch whose highlight slides from where it was (`from`) to where it is.
+const seg = (act, items, cur, label) => `<div class="seg" role="group" aria-label="${label}" style="--n:${items.length};--i:${Math.max(0, items.findIndex(k => k[0] === (segFrom[act] ?? cur)))}" data-i="${items.findIndex(k => k[0] === cur)}">${items.map(([k, l]) => `<button type="button" data-act="${act}" data-id="${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
+const segFrom = {};
 
 // ---------- Views ----------
 function spotRow(s) {
   const x = st(s.id), n = place(s);
   return `<button class="item" data-act="spot" data-id="${s.id}">
     <span class="n">${n ?? ''}</span>
-    <span class="grow"><span class="name">${esc(s.name)}</span><span class="sub">${hereLine(x)}</span></span>${scoreBox(x)}</button>`;
+    <span class="grow"><span class="name">${esc(s.name)}</span><span class="sub" data-n="h-${s.id}">${hereLine(x)}</span></span>${scoreBox(x, s.id)}</button>`;
 }
 function modelSlot(b) {
   return MODELS[b] ? `<div class="model" data-model="${b}"></div>` : '';
@@ -72,23 +75,23 @@ function viewSpot() {
   const mrows = METERS.map(([k, label, hint]) => V.rating
     ? `<div class="meter"><b>${label}</b><span class="v" id="out-${k}">${fmt(Math.round(val(k) * 2) / 2)}</span>
         <input type="range" id="rate-${k}" min="0" max="10" step="0.5" value="${Math.round(val(k) * 2) / 2}" data-k="${k}" aria-label="${label}"><span class="hint">${hint}</span></div>`
-    : `<div class="meter"><b>${label}</b><span class="v">${fmt(val(k)) ?? 'No ratings'}</span>
-        <div class="bar"><i style="width:${(val(k) ?? 0) * 10}%"></i></div><span class="hint">${hint}</span></div>`).join('');
+    : `<div class="meter"><b>${label}</b><span class="v" data-n="m-${k}">${fmt(val(k)) ?? 'No ratings'}</span>
+        <div class="bar"><i style="width:${(val(k) ?? 0) * 10}%;--d:${METERS.findIndex(m => m[0] === k) * 70}ms"></i></div><span class="hint">${hint}</span></div>`).join('');
   return `<button class="back" data-act="back">‹ Back</button>
     ${modelSlot(s.bldg)}
     <div><p class="code">${s.code}</p><h1 class="h1">${esc(s.name)}</h1><p class="sub">${esc(s.where)}</p></div>
-    <div class="row"><span class="big">${fmt(x.score) ?? '–'}</span>
+    <div class="row"><span class="big" ${x.score == null ? '' : `data-count="${x.score}"`}>${fmt(x.score) ?? '–'}</span>
       <span class="grow sub">${n ? `#${n} on campus, from ${plural(x.rankers, 'ranking')}` : 'Nobody has ranked it yet. Be the first.'}${mine ? `<br>Your score: <b>${fmt(mine)}</b>` : ''}</span></div>
     <p class="lead">${esc(s.note)}</p>
     <div class="wrap">${s.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
     <div class="row"><button class="btn pri grow" data-act="${inSess ? 'end' : 'lockin'}" data-id="${s.id}">${inSess ? 'End session' : 'Lock in here'}</button>
       <button class="btn grow" data-act="rank" data-id="${s.id}">${mine ? 'Rank it again' : 'Rank this spot'}</button></div>
-    <div class="card stack"><h2 class="h2">Right now</h2><p>${hereLine(x)}</p></div>
+    <div class="card stack"><h2 class="h2">Right now</h2><p data-n="now">${hereLine(x)}</p></div>
     <div class="card stack"><div class="row"><h2 class="h2 grow">Vibe meters</h2>
       <button class="btn sm" data-act="${V.rating ? 'saverate' : 'rate'}">${V.rating ? 'Save my rating' : x.myRating ? 'Change my rating' : 'Rate the vibes'}</button></div>
       ${mrows}<p class="small">${x.raters ? `Averaged from ${plural(x.raters, 'rating')}.` : 'No ratings yet.'}</p></div>
     <div class="card stack"><h2 class="h2">Baddie counter</h2>
-      <div class="gem"><span class="count">${x.gems}</span><span class="grow sub">rare ${x.gems === 1 ? 'gem' : 'gems'} spotted here today</span>
+      <div class="gem"><span class="count" data-n="gem">${x.gems}</span><span class="grow sub">rare ${x.gems === 1 ? 'gem' : 'gems'} spotted here today</span>
         <button class="btn sm ${x.gemmed ? '' : 'pri'}" data-act="gem" data-id="${s.id}">${x.gemmed ? 'Counted' : 'Spotted one'}</button></div>
       <p class="small">A count only. No names, photos or descriptions, ever.</p></div>
     <button class="btn" data-act="bldg" data-id="${s.bldg}">Open ${esc(BLDG[s.bldg][3])}</button>
@@ -103,8 +106,8 @@ function viewMap() {
   const side = { man: 'l', reg: 'r', rey: 'a' };
   const pins = Object.entries(BLDG).map(([id, [name, x, y]]) => { const n = here(id), r = n ? 13 : 8, at = side[id] || 'b';
     const lx = at === 'l' ? x - r - 5 : at === 'r' ? x + r + 5 : x, ly = at === 'a' ? y - r - 9 : at === 'b' ? y + r + 11 : y, anchor = at === 'l' ? 'end' : at === 'r' ? 'start' : 'middle';
-    return `<g class="pin ${id === sel ? 'sel' : ''} ${n ? 'live' : ''}" data-act="pin" data-id="${id}" tabindex="0" role="button" aria-label="${name}, ${n} locked in" aria-pressed="${id === sel}">
-    <circle class="hit" cx="${x}" cy="${y}" r="20"></circle><circle class="d" cx="${x}" cy="${y}" r="${r}"></circle>${n ? `<text class="c" x="${x}" y="${y}">${n}</text>` : ''}
+    return `<g class="pin ${id === sel ? 'sel' : ''} ${n ? 'live' : ''}" style="--d:${Math.round(y / 2.4)}ms" data-act="pin" data-id="${id}" tabindex="0" role="button" aria-label="${name}, ${n} locked in" aria-pressed="${id === sel}">
+    <circle class="hit" cx="${x}" cy="${y}" r="20"></circle>${n ? `<circle class="ping" cx="${x}" cy="${y}" r="13"></circle>` : ''}<circle class="d" cx="${x}" cy="${y}" r="${r}"></circle>${n ? `<text class="c" x="${x}" y="${y}">${n}</text>` : ''}
     <text class="pn" x="${lx}" y="${ly}" text-anchor="${anchor}">${name}</text></g>`; }).join('');
   const inB = ranked().filter(s => s.bldg === sel);
   return `<div><h1 class="h1">Campus map</h1><p class="sub">The number on a building is how many people are locked in there now. Tap one to see it.</p></div>
@@ -144,7 +147,7 @@ function viewBldg() {
 const ARROW = { 1: 'M6 15l6-6 6 6', '-1': 'M6 9l6 6 6-6' };
 function postRow(p) {
   const s = p.spot && spot(p.spot), v = (d, label) => `<button class="${p.myVote === d ? 'on' : ''}" data-act="vote" data-id="${p.id}" data-d="${d}" aria-label="${label}" aria-pressed="${p.myVote === d}"><svg viewBox="0 0 24 24"><path d="${ARROW[d]}"></path></svg></button>`;
-  return `<div class="post"><div class="votes">${v(1, 'Upvote')}<span>${p.votes}</span>${v(-1, 'Downvote')}</div>
+  return `<div class="post" data-pid="${p.id}"><div class="votes">${v(1, 'Upvote')}<span data-n="v-${p.id}">${p.votes}</span>${v(-1, 'Downvote')}</div>
     <div class="grow"><p class="meta"><span class="who">${esc(p.by)}${p.mine ? ' (you)' : ''}</span><span>${ago(p.created)}</span>
       ${p.audience === 'friends' ? '<span class="only">Friends only</span>' : ''}
       ${s ? `<button class="link" data-act="spot" data-id="${s.id}">${esc(s.name)}</button>` : ''}</p>
@@ -164,7 +167,7 @@ function viewFeed() {
         <select id="postAud" class="grow" aria-label="Who can see it"><option value="campus">Everyone on campus</option><option value="friends" ${friends ? 'selected' : ''}>Friends only</option></select></div>
       <div class="row"><label class="tog grow"><input type="checkbox" id="postAnon" ${S.me.anon ? 'checked' : ''}>Post as ${esc(S.me.handle)}</label>
         <button class="btn pri" type="submit">Post it</button></div></form>
-    <div class="seg" role="group" aria-label="Which posts">${[['friends', 'Friends'], ['campus', 'Campus']].map(([k, l]) => `<button data-act="feed" data-id="${k}" aria-pressed="${V.feed === k}">${l}</button>`).join('')}</div>
+    ${seg('feed', [['friends', 'Friends'], ['campus', 'Campus']], V.feed, 'Which posts')}
     ${posts.length ? `<div class="list">${posts.map(postRow).join('')}</div>` : `<p class="sub">${none}</p>`}`;
 }
 function viewClasses() {
@@ -175,7 +178,7 @@ function viewClasses() {
       <div><p class="code">${c[0]}</p><h1 class="h1">${esc(c[1])}</h1></div>
       <button class="card row" data-act="spot" data-id="${s.id}"><span class="grow"><span class="small">Where this class studies</span><br><b>${esc(s.name)}</b></span>${scoreBox(st(s.id))}</button>
       <h2 class="h2">Shared by students</h2>
-      ${items.length ? `<div class="list">${items.map(r => `<div class="post"><div class="votes"><button class="${r.voted ? 'on' : ''}" data-act="rvote" data-id="${r.id}" aria-label="Upvote" aria-pressed="${r.voted}"><svg viewBox="0 0 24 24"><path d="${ARROW[1]}"></path></svg></button><span>${r.votes}</span></div>
+      ${items.length ? `<div class="list">${items.map(r => `<div class="post"><div class="votes"><button class="${r.voted ? 'on' : ''}" data-act="rvote" data-id="${r.id}" aria-label="Upvote" aria-pressed="${r.voted}"><svg viewBox="0 0 24 24"><path d="${ARROW[1]}"></path></svg></button><span data-n="rv-${r.id}">${r.votes}</span></div>
         <div class="grow"><p class="meta"><span class="who">${esc(r.kind)}</span><span>${esc(r.by)}${r.mine ? ' (you)' : ''}</span></p><p class="body">${esc(r.title)}</p>
         ${r.mine ? `<button class="link small" data-act="delres" data-id="${r.id}">Delete</button>` : ''}</div></div>`).join('')}</div>` : '<p class="sub">Nothing shared for this class yet.</p>'}
       <form class="card stack" id="resForm"><h2 class="h2">Share something you made</h2>
@@ -191,7 +194,7 @@ function viewClasses() {
 function viewMe() {
   const link = `${location.origin}/?add=${S.me.username}`;
   return `<div><h1 class="h1">${esc(S.me.name)}</h1><p class="sub">@${esc(S.me.username)}</p></div>
-    <div class="stats"><div><b>${S.stats.streak}</b><span>day streak</span></div><div><b>${S.stats.weekHours.toFixed(1)}</b><span>hours this week</span></div><div><b>${S.myRank.length}</b><span>spots ranked</span></div></div>
+    <div class="stats"><div><b data-n="streak">${S.stats.streak}</b><span>day streak</span></div><div><b>${S.stats.weekHours.toFixed(1)}</b><span>hours this week</span></div><div><b>${S.myRank.length}</b><span>spots ranked</span></div></div>
     <div class="card stack"><label class="tog"><input type="checkbox" id="anonBox" ${S.me.anon ? 'checked' : ''}><span class="grow">Anonymous mode</span></label>
       <p class="small">${S.me.anon ? `On. New posts default to <b>${esc(S.me.handle)}</b>, and friends see a count where you lock in, not your name.` : 'Off. Friends see your name on posts, check-ins and the leaderboard.'}</p></div>
     <h2 class="h2">Friends</h2>
@@ -218,7 +221,7 @@ function viewAuth() {
       <p class="lead">${invite ? `<b>@${esc(invite)}</b> invited you. ` : ''}Lockr Study Spots is ${SPOTS.length} libraries, reading rooms and cafés, scored by the students who sit in them.</p>
       <ul><li>See which spots your friends are locked in at right now.</li><li>Post to friends only, or to campus under an anonymous handle.</li><li>Trade study guides and notes by class.</li></ul></div>
     <form class="card stack" id="authForm" novalidate>
-      <div class="seg" role="group" aria-label="Account">${[['signup', 'Create account'], ['login', 'Sign in']].map(([k, l]) => `<button type="button" data-act="auth" data-id="${k}" aria-pressed="${V.auth === k}">${l}</button>`).join('')}</div>
+      ${seg('auth', [['signup', 'Create account'], ['login', 'Sign in']], V.auth, 'Account')}
       ${up ? `<label class="f">Your name<input type="text" id="authName" maxlength="30" autocomplete="name" placeholder="Maya"></label>` : ''}
       <label class="f">Username<input type="text" id="authUser" maxlength="20" autocapitalize="none" autocomplete="username" placeholder="maya_k"></label>
       <label class="f">Password<input type="password" id="authPass" autocomplete="${up ? 'new-password' : 'current-password'}">${up ? '<span class="small">8 characters or more.</span>' : ''}</label>
@@ -240,7 +243,9 @@ function sheet() {
       <div class="vs"><button data-act="pick" data-d="new">${esc(a.name)}</button><button data-act="pick" data-d="old">${esc(b.name)}</button></div>
       <button class="btn" data-act="closesheet">Cancel</button></div>`;
   }
-  el.hidden = !(V.rank || V.done);
+  const show = !!(V.rank || V.done);
+  el.classList.toggle('opening', show && el.hidden);
+  el.hidden = !show;
 }
 async function finishRank(list, id) { V.rank = null; if (await act('/api/rank', { list })) { V.done = id; render(true); } }
 function startRank(id) {
@@ -268,6 +273,7 @@ function mountModels() {
       for (const [k, v] of Object.entries({ src: `models/${MODELS[id].file}`, alt: `3D model of ${BLDG[id][3]}`, 'camera-controls': '', 'auto-rotate': '', 'rotation-per-second': '12deg', 'auto-rotate-delay': '0',
         'interaction-prompt': 'none', 'shadow-intensity': '0.9', 'shadow-softness': '0.9', exposure: '1.05', 'tone-mapping': 'neutral', 'camera-orbit': '25deg 72deg auto', 'min-camera-orbit': 'auto 20deg auto', 'max-camera-orbit': 'auto 88deg auto', 'disable-pan': '' })) m.setAttribute(k, v);
     }
+    viewers[id].addEventListener('load', () => viewers[id].classList.add('ready'), { once: true });
     slot.append(viewers[id]);
     slot.insertAdjacentHTML('beforeend', '<span class="how">Drag to turn</span>');
   }
@@ -276,7 +282,15 @@ function mountModels() {
 // ---------- Render ----------
 const TABS = [['spots', 'Spots', 'M4 6h16M4 12h16M4 18h10'], ['map', 'Map', 'M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z'],
   ['feed', 'Feed', 'M4 5h16v11H9l-5 4z'], ['classes', 'Classes', 'M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h11'], ['me', 'Me', 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0']];
-let lastHtml = '';
+let lastHtml = '', seen = null, tabsBuilt = false, popKey = null;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+// Count a number up to its value once, when a screen is opened.
+function countUp(el) {
+  const to = +el.dataset.count, t0 = performance.now(), dur = 650;
+  const step = t => { const k = Math.min(1, (t - t0) / dur); el.textContent = (to * (1 - Math.pow(1 - k, 3))).toFixed(1); if (k < 1 && el.isConnected) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+// `keep` is false when the person went somewhere (the new screen enters) and true when only the data changed (nothing re-enters; changed numbers bump, new posts slide in).
 function render(keep) {
   const view = $('view');
   const html = !S ? viewAuth() : V.spot ? viewSpot() : V.bldg ? viewBldg() : { spots: viewSpots, map: viewMap, feed: viewFeed, classes: viewClasses, me: viewMe }[V.tab]();
@@ -284,15 +298,30 @@ function render(keep) {
     // Keep what is being typed, and where the cursor is, across a redraw.
     const y = view.scrollTop, a = document.activeElement, focus = a && view.contains(a) && a.id ? [a.id, a.selectionStart, a.selectionEnd] : null;
     const typed = keep ? [...view.querySelectorAll('input[id], textarea[id], select[id]')].map(el => [el.id, el.type === 'checkbox' ? el.checked : el.value]) : [];
+    const before = keep ? new Map([...view.querySelectorAll('[data-n]')].map(el => [el.dataset.n, el.textContent])) : null;
+    view.classList.toggle('nav', !keep);
+    view.dataset.dir = V.dir || 'fwd';
     view.innerHTML = lastHtml = html;
     for (const [id, v] of typed) { const el = $(id); if (el && el.type !== 'checkbox' && el.type !== 'range' && !id.startsWith('anon')) el.value = v; }
     if (focus && $(focus[0])) { const el = $(focus[0]); el.focus(); try { el.setSelectionRange(focus[1], focus[2]); } catch {} }
     view.scrollTop = keep ? y : 0;
+    if (before) for (const el of view.querySelectorAll('[data-n]')) if (before.has(el.dataset.n) && before.get(el.dataset.n) !== el.textContent) el.classList.add('bump');
+    if (!keep && !reduced.matches) view.querySelectorAll('[data-count]').forEach(countUp);
+    // Posts that were not on any screen before arrive with a slide and a highlight.
+    if (S) { const ids = S.posts.map(p => String(p.id)); if (seen) for (const el of view.querySelectorAll('.post[data-pid]')) if (!seen.has(el.dataset.pid)) el.classList.add('new'); seen = new Set([...(seen || []), ...ids]); } else seen = null;
+    if (popKey) { view.querySelector(popKey)?.classList.add('pop'); popKey = null; }
+    requestAnimationFrame(() => view.querySelectorAll('.seg[data-i]').forEach(el => el.style.setProperty('--i', el.dataset.i)));
+    Object.keys(segFrom).forEach(k => delete segFrom[k]);
     mountModels();
   }
+  V.dir = 'fwd';
   $('tabs').hidden = $('anonChip').hidden = !S;
   if (S) {
-    $('tabs').innerHTML = TABS.map(t => `<button data-act="tab" data-id="${t[0]}" aria-current="${V.tab === t[0]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${t[2]}"></path></svg>${t[1]}${t[0] === 'me' && S.incoming.length ? `<span class="badge">${S.incoming.length}</span>` : ''}</button>`).join('');
+    // The tab bar is built once, so its highlight can slide between tabs.
+    if (!tabsBuilt) { $('tabs').innerHTML = '<i class="ind" aria-hidden="true"></i>' + TABS.map(t => `<button data-act="tab" data-id="${t[0]}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${t[2]}"></path></svg>${t[1]}<span class="badge" hidden></span></button>`).join(''); tabsBuilt = true; }
+    $('tabs').style.setProperty('--i', TABS.findIndex(t => t[0] === V.tab));
+    for (const b of $('tabs').querySelectorAll('button')) b.setAttribute('aria-current', V.tab === b.dataset.id);
+    const badge = $('tabs').querySelector('[data-id=me] .badge'); badge.hidden = !S.incoming.length; badge.textContent = S.incoming.length;
     $('anonChip').textContent = S.me.anon ? 'Anonymous: on' : 'Anonymous: off';
     $('anonChip').className = 'pill' + (S.me.anon ? ' on' : '');
     $('anonChip').setAttribute('aria-pressed', S.me.anon);
@@ -314,10 +343,10 @@ const stay = fn => (...a) => { fn(...a); render(true); };
 const ACT = {
   tab: go(id => { V.tab = id; V.spot = V.bldg = V.course = null; V.rating = false; }),
   filter: stay(id => { V.filter = id; }),
-  feed: stay(id => { V.feed = id; }),
-  auth: stay(id => { V.auth = id; V.err = ''; }),
+  feed: stay(id => { segFrom.feed = V.feed; V.feed = id; }),
+  auth: stay(id => { segFrom.auth = V.auth; V.auth = id; V.err = ''; }),
   spot: go(id => { V.spot = id; V.rating = false; }),
-  back: go(() => { if (V.spot) { V.spot = null; V.rating = false; } else if (V.bldg) V.bldg = null; else V.course = null; }),
+  back: go(() => { V.dir = 'back'; if (V.spot) { V.spot = null; V.rating = false; } else if (V.bldg) V.bldg = null; else V.course = null; }),
   pin: stay(id => { V.pin = id; }),
   bldg: go(id => { V.bldg = id; V.floor = null; V.spot = null; }),
   floor: stay(id => { V.floor = id; }),
@@ -342,7 +371,9 @@ const ACT = {
 };
 $('app').addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
-  if (el) ACT[el.dataset.act](el.dataset.id, el.dataset.d);
+  if (!el) return;
+  if (el.matches('.votes button, [data-act=gem]')) popKey = `[data-act="${el.dataset.act}"][data-id="${el.dataset.id}"]` + (el.dataset.d ? `[data-d="${el.dataset.d}"]` : '');
+  ACT[el.dataset.act](el.dataset.id, el.dataset.d);
 });
 $('app').addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('g[data-act]')) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); }

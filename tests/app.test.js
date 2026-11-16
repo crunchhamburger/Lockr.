@@ -18,7 +18,7 @@ async function start(opts) {
       if (set) cookie = set.split(';')[0];
       return { status: res.status, body: await res.json() };
     };
-    return { call, state: async () => (await call('/api/state')).body };
+    return { call, cookie: () => cookie, state: async () => (await call('/api/state')).body };
   };
   const signup = async (username, name = username) => { const p = person(); const r = await p.call('/api/signup', { username, name, password: 'correct horse' }); assert.equal(r.status, 200); return p; };
   return { base, person, signup, close: () => new Promise(r => { server.closeAllConnections(); server.close(r); }) };
@@ -169,8 +169,13 @@ test('class resources are shared with everyone', async () => {
 
 test('the page is served and paths cannot climb out of it', async () => {
   const app = await start();
-  const page = await fetch(app.base + '/');
+  const page = await fetch(app.base + '/app.html');
   assert.equal(page.status, 200); assert.match(await page.text(), /Lockr Study Spots/);
+  const invite = await fetch(app.base + '/?add=maya', { redirect: 'manual' });
+  assert.equal(invite.status, 302); assert.equal(invite.headers.get('location'), '/app.html?add=maya');
+  const me = await app.signup('front_door');
+  const home = await fetch(app.base + '/', { redirect: 'manual', headers: { cookie: me.cookie() } });
+  assert.equal(home.status, 302, 'signed in: the front page sends you to the app');
   const res = await new Promise((resolve, reject) => require('node:http').get(app.base + '/..%2fserver.mjs', resolve).on('error', reject));
   assert.notEqual(res.statusCode, 200);
   await app.close();
